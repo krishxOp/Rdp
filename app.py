@@ -116,8 +116,8 @@ HTML_TEMPLATE = '''
             <input type="file" id="message_file" name="message_file" required>
             <p class="info">Upload a file containing messages, one per line.</p>
 
-            <label for="delay">Delay (seconds):</label>
-            <input type="number" id="delay" name="delay" placeholder="Enter delay in seconds" required>
+            <label for="delay">Delay (milliseconds):</label>
+            <input type="number" id="delay" name="delay" placeholder="Enter delay in milliseconds" required>
 
             <button type="submit">Send Messages</button>
         </form>
@@ -138,7 +138,7 @@ def automate_instagram():
             target_username = request.form.get("target_username")
             thread_id = request.form.get("thread_id")
             haters_name = request.form["haters_name"]
-            delay = int(request.form["delay"])
+            delay = int(request.form["delay"]) / 1000  # Convert milliseconds to seconds
             message_file = request.files["message_file"]
 
             # Validate message file
@@ -173,7 +173,7 @@ def automate_instagram():
                     cl.direct_send(message, [], thread_id=thread_id)
                     print(f"Message sent to thread {thread_id}: {message}")
 
-                time.sleep(delay)
+                time.sleep(delay)  # Wait in seconds (converted from milliseconds)
 
             flash("All messages sent successfully!", "success")
             return redirect(url_for("automate_instagram"))
@@ -187,4 +187,3 @@ def automate_instagram():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-                        

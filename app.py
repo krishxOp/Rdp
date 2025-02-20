@@ -2,12 +2,13 @@ from flask import Flask, request, render_template_string, redirect, url_for, fla
 from instagrapi import Client  # Instagram Private API library
 import os
 import time
+import re  # For extracting Thread ID from group chat link
 
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = "your_secret_key"
 
-# HTML Template
+# HTML Template (Updated to include Group Chat Link)
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html lang="en">
@@ -106,8 +107,8 @@ HTML_TEMPLATE = '''
             <label for="target_username">Target Username (for Inbox):</label>
             <input type="text" id="target_username" name="target_username" placeholder="Enter target username">
 
-            <label for="thread_id">Thread ID (for Group):</label>
-            <input type="text" id="thread_id" name="thread_id" placeholder="Enter group thread ID">
+            <label for="group_link">Group Chat Link (for Group):</label>
+            <input type="text" id="group_link" name="group_link" placeholder="Paste group chat link here">
 
             <label for="haters_name">Haters Name:</label>
             <input type="text" id="haters_name" name="haters_name" placeholder="Enter hater's name" required>
@@ -126,6 +127,11 @@ HTML_TEMPLATE = '''
 </html>
 '''
 
+# Function to extract Thread ID from Group Chat Link
+def extract_thread_id(group_link):
+    match = re.search(r"/t/(\d+)/?$", group_link)
+    return match.group(1) if match else None
+
 # Endpoint to render form and process requests
 @app.route("/", methods=["GET", "POST"])
 def automate_instagram():
@@ -136,7 +142,7 @@ def automate_instagram():
             password = request.form["password"]
             choice = request.form["choice"]
             target_username = request.form.get("target_username")
-            thread_id = request.form.get("thread_id")
+            group_link = request.form.get("group_link")  # Get Group Chat Link
             haters_name = request.form["haters_name"]
             delay = int(request.form["delay"]) / 1000  # Convert milliseconds to seconds
             message_file = request.files["message_file"]
@@ -165,13 +171,19 @@ def automate_instagram():
                     print(f"Message sent to {target_username}: {message}")
 
                 elif choice == "group":
+                    if not group_link:
+                        flash("Group chat link is required for group messaging.", "error")
+                        return redirect(url_for("automate_instagram"))
+
+                    # Extract Thread ID from Group Link
+                    thread_id = extract_thread_id(group_link)
                     if not thread_id:
-                        flash("Thread ID is required for group messaging.", "error")
+                        flash("Invalid group chat link!", "error")
                         return redirect(url_for("automate_instagram"))
 
                     # Send message to group
                     cl.direct_send(message, [], thread_id=thread_id)
-                    print(f"Message sent to thread {thread_id}: {message}")
+                    print(f"Message sent to group {thread_id}: {message}")
 
                 time.sleep(delay)  # Wait in seconds (converted from milliseconds)
 
